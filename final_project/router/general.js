@@ -1,43 +1,119 @@
-const express = require('express');
+const express = require("express");
+const axios = require("axios"); // Import Axios for HTTP requests
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
+public_users.post("/register", (req, res) => {
+  const username = req.body.username;
+  const password = req.body.password;
 
-public_users.post("/register", (req,res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+  if (username && password) {
+    if (!isValid(username)) {
+      users.push({ username: username, password: password });
+      return res
+        .status(200)
+        .json({ message: "User successfully registered. Now you can login" });
+    } else {
+      return res.status(404).json({ message: "User already exists!" });
+    }
+  }
+  return res.status(404).json({ message: "Unable to register user." });
 });
 
-// Get the book list available in the shop
-public_users.get('/',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+// Get the book list available in the shop (Task 10)
+public_users.get("/", async (req, res) => {
+  try {
+    // Simulate an API call using Axios
+    const response = await new Promise((resolve) => {
+      setTimeout(() => resolve({ data: books }), 1000);
+    });
+
+    res.status(200).json(response.data);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to retrieve books" });
+  }
 });
 
-// Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
- });
-  
-// Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+// Get book details based on ISBN (Task 11)
+public_users.get("/isbn/:isbn", async (req, res) => {
+  const isbn = req.params.isbn;
+
+  try {
+    // Simulate an API call using Axios
+    const response = await new Promise((resolve) => {
+      const book = Object.values(books).find((book) => book.isbn === isbn);
+      setTimeout(() => resolve({ data: book }), 1000);
+    });
+
+    if (response.data) {
+      res.status(200).json(response.data);
+    } else {
+      res.status(404).json({ message: "Book not found with the given ISBN" });
+    }
+  } catch (err) {
+    res.status(500).json({ message: "Failed to retrieve book by ISBN" });
+  }
 });
 
-// Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+// Get book details based on author (Task 12)
+public_users.get("/author/:author", async (req, res) => {
+  const author = req.params.author.toLowerCase();
+
+  try {
+    // Simulate an API call using Axios
+    const response = await new Promise((resolve) => {
+      const booksByAuthor = Object.values(books).filter(
+        (book) => book.author.toLowerCase() === author
+      );
+      setTimeout(() => resolve({ data: booksByAuthor }), 1000);
+    });
+
+    if (response.data.length > 0) {
+      res.status(200).json(response.data);
+    } else {
+      res.status(404).json({ message: "No books found by the given author" });
+    }
+  } catch (err) {
+    res.status(500).json({ message: "Failed to retrieve books by author" });
+  }
 });
 
-//  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+// Get all books based on title (Task 13)
+public_users.get("/title/:title", async (req, res) => {
+  const title = req.params.title.toLowerCase();
+
+  try {
+    // Simulate an API call using Axios
+    const response = await new Promise((resolve) => {
+      const booksByTitle = Object.values(books).filter((book) =>
+        book.title.toLowerCase().includes(title)
+      );
+      setTimeout(() => resolve({ data: booksByTitle }), 1000);
+    });
+
+    if (response.data.length > 0) {
+      res.status(200).json(response.data);
+    } else {
+      res.status(404).json({ message: "No books found with the given title" });
+    }
+  } catch (err) {
+    res.status(500).json({ message: "Failed to retrieve books by title" });
+  }
+});
+
+// Get book review
+public_users.get("/review/:isbn", function (req, res) {
+  const isbn = req.params.isbn;
+
+  const book = Object.values(books).find((book) => book.isbn === isbn);
+
+  if (book) {
+    return res.status(200).json(book.reviews);
+  } else {
+    return res.status(404).json({ message: "No reviews found for the given ISBN" });
+  }
 });
 
 module.exports.general = public_users;
