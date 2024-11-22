@@ -5,35 +5,19 @@ const regd_users = express.Router();
 
 let users = [];
 
+// Check if a username is valid (no duplicates)
 const isValid = (username) => {
-  //returns boolean
-  // Filter the users array for any user with the same username
-  let userswithsamename = users.filter((user) => {
-    return user.username === username;
-  });
-  // Return true if any user with the same username is found, otherwise false
-  if (userswithsamename.length > 0) {
-    return true;
-  } else {
-    return false;
-  }
+  return users.some((user) => user.username === username);
 };
 
+// Authenticate user by username and password
 const authenticatedUser = (username, password) => {
-  //returns boolean
-  // Filter the users array for any user with the same username and password
-  let validusers = users.filter((user) => {
-    return user.username === username && user.password === password;
-  });
-  // Return true if any valid user is found, otherwise false
-  if (validusers.length > 0) {
-    return true;
-  } else {
-    return false;
-  }
+  return users.some(
+    (user) => user.username === username && user.password === password
+  );
 };
 
-//only registered users can login
+// Only registered users can login
 regd_users.post("/login", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
@@ -67,12 +51,11 @@ regd_users.post("/login", (req, res) => {
   }
 });
 
+// Add or update a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  console.log("Route accessed with ISBN:", req.params.isbn);
-
-  const isbn = req.params.isbn;
-  const { review } = req.query;
-  const username = req.session?.authorization?.username;
+  const isbn = req.params.isbn; // Get the ISBN (object key)
+  const { review } = req.query; // Get the review text
+  const username = req.session?.authorization?.username; // Get the username from session
 
   if (!username) {
     return res.status(401).json({ message: "Unauthorized. Please log in." });
@@ -82,16 +65,19 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     return res.status(400).json({ message: "Review text is required." });
   }
 
-  const book = Object.values(books).find((book) => book.isbn === isbn);
+  // Access the book using the object key (ISBN)
+  const book = books[isbn];
 
   if (!book) {
     return res.status(404).json({ message: "Book not found." });
   }
 
+  // Initialize reviews if not present
   if (!book.reviews) {
     book.reviews = {};
   }
 
+  // Add or update the user's review
   book.reviews[username] = review;
 
   return res.status(200).json({
@@ -100,27 +86,31 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
   });
 });
 
-
 // Delete a book review
 regd_users.delete("/auth/review/:isbn", (req, res) => {
-  const isbn = req.params.isbn; // Get the ISBN from the URL
-  const sessionData = req.session.authorization; // Retrieve session data
-  const username = sessionData ? sessionData.username : null; // Get the username from the session
+  const isbn = req.params.isbn; // Get the ISBN (object key)
+  const username = req.session?.authorization?.username; // Get the username from session
 
   if (!username) {
-    return res.status(401).json({ message: "Unauthorized. Please log in to delete a review." });
+    return res
+      .status(401)
+      .json({ message: "Unauthorized. Please log in to delete a review." });
   }
 
-  // Find the book by ISBN
-  const book = Object.values(books).find((book) => book.isbn === isbn);
+  // Access the book using the object key (ISBN)
+  const book = books[isbn];
 
   if (!book) {
-    return res.status(404).json({ message: "Book not found with the given ISBN." });
+    return res
+      .status(404)
+      .json({ message: "Book not found with the given ISBN." });
   }
 
-  // Check if the reviews object exists
+  // Check if the user's review exists
   if (!book.reviews || !book.reviews[username]) {
-    return res.status(404).json({ message: "Review not found for the given user." });
+    return res
+      .status(404)
+      .json({ message: "Review not found for the given user." });
   }
 
   // Delete the user's review
@@ -131,7 +121,6 @@ regd_users.delete("/auth/review/:isbn", (req, res) => {
     reviews: book.reviews,
   });
 });
-
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
